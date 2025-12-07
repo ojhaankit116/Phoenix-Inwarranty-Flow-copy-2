@@ -1,0 +1,41 @@
+name: Postman Collection Workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '00 1 * * *'
+    - cron: '00 9 * 1 *'
+
+jobs:
+  run-postman-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.1
+
+      - name: Install Node.js and npm
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version: '22'
+
+      - name: Install Newman and Html-extra globally
+        run: |
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
+
+      - name: Run the Postman Collection with newman
+        run: |
+          newman run 'Inwarranty-flow Collection Copy 2.postman_collection.json' \
+          -e QA.postman_environment.json \
+          -d testdata.csv \
+          -r cli,htmlextra
+
+      - name: Newman Report
+        if: always() #ensure that the archive executed irrespective whether the previous step has passes or not
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: Newman Reports
+          path: newman/*.html
